@@ -1,6 +1,9 @@
 from process_data import *
 from scipy.fft import rfft, rfftfreq
-def create_dataset(root_dir: str, n_s: int, datatype: str, model_type: str, fs: int = 256, 
+
+
+
+def create_dataset(root_dir: str, n_s: int, model_type: str, fs: int = 256, 
                    Tstart: float = 1.5, Tend: float = 3.5, encoding : str = "rate") -> tuple:
     """
     Prepares datasets for different model types based on raw EEG data.
@@ -8,7 +11,6 @@ def create_dataset(root_dir: str, n_s: int, datatype: str, model_type: str, fs: 
     Parameters:
     - root_dir (str): The root directory containing the data.
     - n_s (int): The subject number.
-    - datatype (str): The type of data to extract ("eeg", "exg", or "baseline").
     - model_type (str): The target model type ("SNN", "ANN", "SVM").
     - fs (int): Sampling frequency, default is 256 Hz.
     - Tstart (float): Start time in seconds for trimming the signal.
@@ -17,7 +19,7 @@ def create_dataset(root_dir: str, n_s: int, datatype: str, model_type: str, fs: 
     Returns:
     - tuple: Processed dataset (X, Y) ready for the specified model type.
     """
-
+    datatype = "eeg"
     X, Y = extract_data_from_subject(root_dir, n_s, datatype)
 
 
@@ -54,6 +56,38 @@ def create_dataset(root_dir: str, n_s: int, datatype: str, model_type: str, fs: 
         raise ValueError("Unsupported model type. Choose 'SNN', 'ANN', or 'SVM'.")
     
     return X_processed, Y[:, 1]
+
+
+def create_dataset_for_all_subjects(root_dir: str, model_type: str, fs: int = 256, 
+                                    Tstart: float = 1.5, Tend: float = 3.5, encoding: str = "rate") -> tuple:
+    """
+    Creates a dataset for all subjects by calling the create_dataset function for each subject.
+
+    Parameters:
+    - root_dir (str): The root directory containing the data.
+    - model_type (str): The target model type ("SNN", "ANN", "SVM").
+    - fs (int): Sampling frequency, default is 256 Hz.
+    - Tstart (float): Start time in seconds for trimming the signal.
+    - Tend (float): End time in seconds for trimming the signal.
+    - encoding (str): Type of encoding used for spikes.
+    - num_subjects (int): Total number of subjects to process.
+
+    Returns:
+    - tuple: Processed dataset (X, Y) for all subjects combined.
+    """
+    X_all = []
+    Y_all = []
+
+    for i in range(1, 11):
+        X, Y = create_dataset(root_dir, i, model_type, fs, Tstart, Tend, encoding)
+        X_all.append(X)
+        Y_all.append(Y)
+
+    # Concatenate data for all subjects along the first axis (samples)
+    X_all = np.concatenate(X_all, axis=0)
+    Y_all = np.concatenate(Y_all, axis=0)
+
+    return X_all, Y_all
 
 
 def convert_to_spikes(X: np.ndarray, fs: int, encoding: str) -> np.ndarray:

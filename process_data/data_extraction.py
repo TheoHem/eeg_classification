@@ -12,7 +12,8 @@ import mne
 import gc
 import os
 import numpy as np
-from utilities import sub_name, unify_names       # noqa
+from process_data.utilities import sub_name, unify_names
+
 import pickle
 from mne.io import Raw
 

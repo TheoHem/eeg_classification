@@ -108,9 +108,72 @@ def convert_to_spikes(X: np.ndarray, fs: int, encoding: str) -> np.ndarray:
 
     if encoding.upper() == "RATE":
         # Rate encoding: convert amplitude to spike train where signal exceeds threshold
-        threshold = 0.5  # Adjustable threshold
-        spike_trains = (X_normalized > threshold).astype(np.float32)
+        #threshold = 1/20  # Adjustable threshold
+        #spike_trains = (X_normalized > threshold).astype(np.float32)
+        #return spike_trains
+        #print("Hello")
+        # Temporal encoding: signal amplitude converted to spike timing
+
+        duration = 100
+        max_rate = 100
+
+        samples, channels, time_steps = X.shape
+        spike_trains = np.zeros((samples, channels, duration))
+        
+        for sample_idx in range(samples):
+            for channel_idx in range(channels):
+                time_series = X_normalized[sample_idx, channel_idx, :]
+                for t in range(duration):
+                    value = time_series[t % time_steps]  # Wrap time data if duration > time_steps
+                    firing_rate = value * max_rate  # Convert value to firing rate
+                    spike_prob = firing_rate / 1000  # Convert rate to spike probability per ms
+                    spike_trains[sample_idx, channel_idx, t] = np.random.rand() < spike_prob
+        
         return spike_trains
+        
+        
+        
+        
+        '''
+        n_time_steps = X.shape[2]
+        n_neurons = len(X)
+        max_rate = 100
+
+        spike_trains = np.zeros((n_time_steps, n_neurons))
+
+        for neuron_idx, value in enumerate(X_normalized):
+            # Firing probability proportional to value
+            firing_rate = value * max_rate  # Convert value to firing rate
+            spike_prob = firing_rate / 1000  # Convert rate to spike probability per ms
+            
+            # Generate spikes for this neuron over time
+            spike_trains[:, neuron_idx] = np.random.rand(n_time_steps) < spike_prob
+        
+        return spike_trains
+        '''
+
+
+
+
+
+
+
+
+        max_time = 100  # Maximum spike time (e.g., 100 ms)
+        spike_times = (X_normalized * max_time).astype(np.int32)
+
+        # Initialize the spike train array
+        spike_trains = np.zeros((X.shape[0], X.shape[1], max_time), dtype=np.float32)
+        
+        # Create spikes at the encoded time steps
+        for sample in range(X.shape[0]):
+            for channel in range(X.shape[1]):
+                for t in range(X.shape[2]):
+                    time = spike_times[sample, channel, t]
+                    if time < max_time:
+                        spike_trains[sample, channel, time] = 1  # Set spike at the specific time index
+        return spike_trains
+
 
     elif encoding.upper() == "TEMPORAL":
         # Temporal encoding: signal amplitude converted to spike timing
